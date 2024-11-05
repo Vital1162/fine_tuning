@@ -204,15 +204,62 @@ trainer_stats = trainer.train()
 
 ```
 # examples saving as float16
-model.push_to_hub_merged("pnpm12/mcq_khtn", tokenizer, save_method = "merged_16bit", token = "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")
+model.push_to_hub_merged("tên_repo", tokenizer, save_method = "merged_16bit", token = "key_hf")
 # saving as lora
-model.push_to_hub_merged("pnpm12/mcq_khtn", tokenizer, save_method = "lora", token = "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")
+model.push_to_hub_merged("tên_repo", tokenizer, save_method = "lora", token = "key_hf")
 # Don't save as 4 bit
 ```
 
-Trường hợp VRAM không đủ:
+### Trường hợp VRAM không đủ:
 
 - Chọn mô hình khác
 - Giảm `per_device_train_batch_size` và `gradient_accumulation_steps`
 - Giảm các lớp tinh chỉnh (`lm_head` và `embed_tokens`)
 - Giảm rank
+
+### Kiểm tra mô hình
+
+```
+# low device
+!pip install -q bitsandbytes
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained(
+                            "beyoru/informatic_merged_full_training"
+                          )
+model = AutoModelForCausalLM.from_pretrained(
+                            "beyoru/informatic_merged_full_training",
+                            load_in_4bit=True
+)
+
+alpaca_prompt = """Sau đây là hướng dẫn mô tả một nhiệm vụ, kết hợp với với hướng dẫn và ngữ cảnh. Hãy viêt một phản hồi là một câu hỏi trắc nghiệm và cung cấp 4 lựa chọn đáp án khác nhau. Hãy chắc chắn rằng mỗi đáp án đều khác biệt, và xác định rõ đáp án đúng.
+
+### Ngữ cảnh
+{}
+
+### Phản hổi
+{}"""
+
+!pip install -q datasets
+## add label and requirements here
+
+contents = ds['context'].to_list()
+
+def generation_df_test(contents: list)
+    from tqdm import tqdm
+    import pandas as pd
+    df = pd.DataFrame(columns=['texts'])
+    for content in tqdm(contents)
+        prompt = alpaca_prompt.format(content, "")
+        inputs = tokenizer(prompt, return_tensors="pt")
+        output = model.generate(**inputs, max_new_tokens=256)
+        answer = tokenizer.decode(output[0], skip_special_tokens=True)
+        #answer = answer.replace(prompt, "")
+        df.loc[i,'texts'] = answer
+
+    return df
+
+df = generation_df_test(contents)
+from google.colab import files
+files.download('df.csv')
+```
