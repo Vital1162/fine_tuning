@@ -225,11 +225,12 @@ model.push_to_hub_merged("tên_repo", tokenizer, save_method = "lora", token = "
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 tokenizer = AutoTokenizer.from_pretrained(
-                            "beyoru/informatic_merged_full_training"
+                            MODEL_NAME
                           )
 model = AutoModelForCausalLM.from_pretrained(
-                            "beyoru/informatic_merged_full_training",
-                            load_in_4bit=True
+                            MODEL_NAME,
+
+                            # load_in_4bit=True # Use this for 8B model above
 )
 
 alpaca_prompt = """Sau đây là hướng dẫn mô tả một nhiệm vụ, kết hợp với với hướng dẫn và ngữ cảnh. Hãy viêt một phản hồi là một câu hỏi trắc nghiệm và cung cấp 4 lựa chọn đáp án khác nhau. Hãy chắc chắn rằng mỗi đáp án đều khác biệt, và xác định rõ đáp án đúng.
