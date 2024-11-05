@@ -52,8 +52,11 @@ requires more than just T4
 model = FastLanguageModel.get_peft_model(
     model,
     r = 128, # 256, 512,...
+
+    # added lm_head, embed_tokens with rank 256+ ~ full training
     target_modules = ["q_proj", "k_proj", "v_proj", "o_proj",
                       "gate_proj", "up_proj", "down_proj",],
+
     lora_alpha = 16,
     lora_dropout = 0.0, # Don't add dropout to lora
     bias = "none",
