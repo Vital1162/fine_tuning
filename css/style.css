@@ -1,0 +1,27 @@
+zero-md {
+    margin: auto;
+    display: block;
+    width: 90%;
+    max-width: 800px;
+    margin: 20px auto;
+    background-color: #131313;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    
+}
+
+@media (min-width: 768px) {
+    zero-md {
+        width: 75%; 
+    }
+}
+
+@media (min-width: 1024px) {
+    zero-md {
+        width: 60%;
+    }
+}
+
+body{
+    background-color: #131313;
+}
