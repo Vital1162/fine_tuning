@@ -3,6 +3,7 @@
 ### Installation
 
 Các cài đặt này có thể thay đổi
+Gần đây có lỗi ở hàm `Trainer` nên sẽ cập nhật khá lâu
 
 ```
 %%capture
