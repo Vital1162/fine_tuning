@@ -285,7 +285,7 @@ Khi tăng $r$ lên thì $\gamma_r$ sẽ giảm đi rất nhiều.
 
 Để tránh điều này khi tinh chỉnh với các $r$ cao. Để đảm bảo sự ổn định khi tăng $r$ thì có nghĩa là ta sẽ làm cho khi tính toán không phụ thuộc vào $r$ nữa =) (Mean và phương sai không phụ thuộc vào rank hay $\Theta_r(1)$)
 
-Lúc này $\nabla_A L$ hay $\nabla_B L$ có độ lớn phục thuộc vào $\frac{\alpha}{sqrt(r)}$ nhỏ hơn rất nhiều so với $\frac{\alpha}{r}$. Vậy tại sao không phải là $\frac{\alpha}{r^{\frac{1}{4}}}$. Bài báo cũng chứng minh điều này khi xem xét Perplexity.
+Lúc này $\nabla_A L$ hay $\nabla_B L$ có độ lớn phục thuộc vào $\frac{\alpha}{\sqrt(r)}$ nhỏ hơn rất nhiều so với $\frac{\alpha}{r}$. Vậy tại sao không phải là $\frac{\alpha}{r^{\frac{1}{4}}}$. Bài báo cũng chứng minh điều này khi xem xét Perplexity.
 
 Về `learning_rate` thì khi điều chỉnh trong $\{5 \times 10^n: -5 < n < -1>\} \cup \{1 \times 10^n: -5 < n <-1\}$ được kiểm tra khi so sánh LoRA với rsLoRA hiệu suất sẽ kém hơn khi so sánh với rsLoRA với default `learning_rate`
 
