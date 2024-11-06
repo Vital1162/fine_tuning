@@ -276,7 +276,7 @@ KHi đưa `rank` của adapter lên quá cao sẽ gây ra _sự sụp đổ grad
 
 Mệnh đề bài báo đưa ra đó là khi tăng kích thước `r`. Khi đó hệ số tỷ lệ của ma trận cấp thấp ($AB, A \in R^{d_1 \times r}, B \in R^{r \times d_2} $)
 
-Khi khở tạo các phần tử của $B$ thường là 0 và với $A$ sẽ được tạo ngẫu nhiên.
+Khi khởi tạo các phần tử của $B$ thường là 0 và với $A$ sẽ được tạo ngẫu nhiên.
 
 Ở đây hệ số tỷ lệ sẽ là
 $\gamma_r$ tỷ lệ nghịch với $r$
@@ -291,6 +291,6 @@ Về `learning_rate` thì khi điều chỉnh trong $\{5 \times 10^n: -5 < n < -
 
 Về `alpha` không thấy bất kỳ tài liệu nào đề cập tới. Nhưng ở bài báo `LoRA Learns Less and Forgets Less` họ có sử dụng $\alpha = 32, r= 256$ với tác vụ về lập trình và $\times 2$ với toán học.
 
-*Tóm lại với rank cao thì nên sử dụng rsLoRA, alpha thì cứu mặc định $\alpha = 2*r$\*
+*Tóm lại với rank cao thì nên sử dụng rsLoRA, alpha thì cứu mặc định\* $\alpha = 2*r$
 
-// Notes: CMIIR :v
+// Notes: CMIIR :v <img src="../img/375d29d5-fbf0-48ae-acfe-19983a14604e.jpeg" alt="Image description" width="10px" height="auto">
