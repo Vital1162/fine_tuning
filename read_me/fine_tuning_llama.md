@@ -264,3 +264,33 @@ df = generation_df_test(contents)
 from google.colab import files
 files.download('df.csv')
 ```
+
+### Cách lựa chọn hệ số phù hợp
+
+Thường là sẽ chẳng có chỉ số nào tuyệt đối cả `rank` và `alpha`.
+
+Theo bài báo `LoRA Learns Less and Forgets Less`. Llama có hiệu suất tốt trong vấn đề toán học. Nhưng không phải tác vụ liên quan đến code, một vài ý kiến chỉ ra rằng bởi khi tinh chỉnh họ đã vô tình bắt mô hình học hỏi kiến thức mới. Điều này sẽ yêu cầu thêm tokens mới vào mô hình.
+
+KHi đưa `rank` của adapter lên quá cao sẽ gây ra _sự sụp đổ gradient_ (`A Rank Stabilization Scaling Factor for Fine-Tuning with LoRA
+` có chứng minh về việc này).
+
+Mệnh đề bài báo đưa ra đó là khi tăng kích thước `r`. Khi đó hệ số tỷ lệ của ma trận cấp thấp ($AB, A \in R^{d_1 \times r}, B \in R^{r \times d_2} $)
+
+Khi khở tạo các phần tử của $B$ thường là 0 và với $A$ sẽ được tạo ngẫu nhiên.
+
+Ở đây hệ số tỷ lệ sẽ là
+$\gamma_r$ tỷ lệ nghịch với $r$
+
+Khi tăng $r$ lên thì $\gamma_r$ sẽ giảm đi rất nhiều.
+
+Để tránh điều này khi tinh chỉnh với các $r$ cao. Để đảm bảo sự ổn định khi tăng $r$ thì có nghĩa là ta sẽ làm cho khi tính toán không phụ thuộc vào $r$ nữa =) (Mean và phương sai không phụ thuộc vào rank hay $\Theta_r(1)$)
+
+Lúc này $\nabla_A L$ hay $\nabla_B L$ có độ lớn phục thuộc vào $\frac{\alpha}{sqrt(r)}$ nhỏ hơn rất nhiều so với $\frac{\alpha}{r}$. Vậy tại sao không phải là $\frac{\alpha}{r^{\frac{1}{4}}}$. Bài báo cũng chứng minh điều này khi xem xét Perplexity.
+
+Về `learning_rate` thì khi điều chỉnh trong $\{5 \times 10^n: -5 < n < -1>\} \cup \{1 \times 10^n: -5 < n <-1\}$ được kiểm tra khi so sánh LoRA với rsLoRA hiệu suất sẽ kém hơn khi so sánh với rsLoRA với default `learning_rate`
+
+Về `alpha` không thấy bất kỳ tài liệu nào đề cập tới. Nhưng ở bài báo `LoRA Learns Less and Forgets Less` họ có sử dụng $\alpha = 32, r= 256$ với tác vụ về lập trình và $\times 2$ với toán học.
+
+*Tóm lại với rank cao thì nên sử dụng rsLoRA, alpha thì cứu mặc định $\alpha = 2*r$\*
+
+// Notes: CMIIR :v
