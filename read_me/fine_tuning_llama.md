@@ -3,14 +3,13 @@
 ### Installation
 
 Các cài đặt này có thể thay đổi
-Gần đây có lỗi ở hàm `Trainer` nên sẽ cập nhật khá lâu
+_Sửa lại install 7/11/2024_
 
 ```
 %%capture
-!pip install unsloth
+!pip install unsloth "xformers==0.0.28.post2"
 # Also get the latest nightly Unsloth!
 !pip uninstall unsloth -y && pip install --upgrade --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
-!pip uninstall transformers -y && pip install --upgrade --no-cache-dir "git+https://github.com/huggingface/transformers.git"
 ```
 
 ### Model
@@ -291,6 +290,6 @@ Về `learning_rate` thì khi điều chỉnh trong $\{5 \times 10^n: -5 < n < -
 
 Về `alpha` không thấy bất kỳ tài liệu nào đề cập tới. Nhưng ở bài báo `LoRA Learns Less and Forgets Less` họ có sử dụng $\alpha = 32, r= 256$ với tác vụ về lập trình và $\times 2$ với toán học.
 
-*Tóm lại với rank cao thì nên sử dụng rsLoRA, alpha thì cứu mặc định\* $\alpha = 2*r$
+_Tóm lại với rank cao thì nên sử dụng rsLoRA hoặc chỉnh alpha thành_ $\alpha = 2*r$
 
 // Notes: CMIIR :v <img src="../img/375d29d5-fbf0-48ae-acfe-19983a14604e.jpeg" alt="Image description" width="10px" height="auto">
