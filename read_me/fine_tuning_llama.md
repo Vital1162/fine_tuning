@@ -3,13 +3,14 @@
 ### Installation
 
 Các cài đặt này có thể thay đổi
-_Sửa lại install 7/11/2024_
+Update lại installation: https://github.com/unslothai/unsloth/issues/1144
 
 ```
 %%capture
-!pip install unsloth "xformers==0.0.28.post2"
+!pip install unsloth
 # Also get the latest nightly Unsloth!
 !pip uninstall unsloth -y && pip install --upgrade --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+!pip uninstall transformers -y && pip install --upgrade --no-cache-dir "git+https://github.com/huggingface/transformers.git"
 ```
 
 ### Model
