@@ -1,4 +1,4 @@
-## Tinh chỉnh mô hình
+## Tinh chỉnh mô hình (text compilation)
 
 ### Installation
 
@@ -294,3 +294,125 @@ Về `alpha` không thấy bất kỳ tài liệu nào đề cập tới. Nhưng
 _Tóm lại với rank cao thì nên sử dụng rsLoRA hoặc chỉnh alpha thành_ $\alpha = 2*r$
 
 // Notes: CMIIR :v <img src="../img/375d29d5-fbf0-48ae-acfe-19983a14604e.jpeg" alt="Image description" width="10px" height="auto">
+
+## Training on response
+
+Thay vì quan tâm đến loss input thì ta sẽ chỉ quan tâm đến loss của đầu ra.
+
+Ở đây ta sẽ ví dụ với bộ dữ liệu `tong_hop_trac_nghiem`
+
+Các bước Installtion, load model, ... tương tự như trên.
+
+Đối với load dữ liệu thì ta sẽ làm như sau:
+
+```
+## tải dữ liệu tong_hop_trac_nghiem
+!pip install -q datasets
+from datasets import load_dataset
+
+ds = load_dataset("beyoru/tong_hop_trac_nghiem", split='train')
+ds.column_names
+```
+
+Ta sẽ nhận được kết quả, in ra các cột sau:
+
+```
+['question',
+ 'answer_a',
+ 'answer_b',
+ 'answer_c',
+ 'answer_d',
+ 'correct_answer',
+ 'context']
+```
+
+### Địng dạng lại dữ liệu
+
+Ở đây ta sẽ sử dụng template của llama-3.1/3.2 cũng có thể sử dụng được vì 3.2 chỉ là bản copy của llama 3.1
+
+```
+from unsloth.chat_templates import get_chat_template
+
+tokenizer = get_chat_template(
+    tokenizer,
+    chat_template = "llama-3.1",
+)
+
+def format_entry(entry):
+    user_content = {'content': entry['context'], 'role': 'user'}
+
+    assistant_content = {
+        'content': (
+            f"Câu hỏi: {entry['question']}\n"
+            f"A. {entry['answer_a']}\n"
+            f"B. {entry['answer_b']}\n"
+            f"C. {entry['answer_c']}\n"
+            f"D. {entry['answer_d']}\n"
+            f"Đáp án: {entry['correct_answer']}."
+        ),
+        'role': 'assistant'
+    }
+
+    return {"conversations": [user_content, assistant_content]}
+
+def formatting_prompts_func(examples):
+    convos = examples["conversations"]
+    texts = [tokenizer.apply_chat_template(convo, tokenize = False, add_generation_prompt = False) for convo in convos]
+    return { "text" : texts, }
+pass
+
+formatted_ds = ds.map(format_entry)
+
+from unsloth.chat_templates import standardize_sharegpt
+dataset = standardize_sharegpt(formatted_ds)
+dataset = dataset.map(formatting_prompts_func, batched = True,)
+```
+
+### Training
+
+```
+from trl import SFTTrainer
+from transformers import TrainingArguments, DataCollatorForSeq2Seq
+from unsloth import is_bfloat16_supported
+
+trainer = SFTTrainer(
+    model = model,
+    tokenizer = tokenizer,
+    train_dataset = dataset,
+    data_collator = DataCollatorForSeq2Seq(tokenizer = tokenizer), # Thêm dòng này vào
+    dataset_text_field = "text",
+    max_seq_length = max_seq_length,
+    dataset_num_proc = 8,
+    packing = False,
+    args = TrainingArguments(
+        per_device_train_batch_size = 2,
+        gradient_accumulation_steps = 4,
+        warmup_steps = 5,
+        num_train_epochs = 1,
+        learning_rate = 2e-4,
+        fp16 = not is_bfloat16_supported(),
+        bf16 = is_bfloat16_supported(),
+        logging_steps = 1,
+        optim = "adamw_8bit",
+        weight_decay = 0.01,
+        lr_scheduler_type = "linear",
+        seed = 3407,
+        output_dir = "outputs",
+        report_to = "none",
+    ),
+)
+
+## set up
+from unsloth.chat_templates import train_on_responses_only
+trainer = train_on_responses_only(
+    trainer,
+    instruction_part = "<|start_header_id|>user<|end_header_id|>\n\n",
+    response_part = "<|start_header_id|>assistant<|end_header_id|>\n\n",
+)
+```
+
+Cuối cùng là train
+
+```
+trainer_stats = trainer.train()
+```
