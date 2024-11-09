@@ -1,5 +1,13 @@
 ## Tinh chỉnh mô hình (text compilation)
 
+### Tập dữ liệu sử dụng
+
+MCQ tin học: https://huggingface.co/datasets/beyoru/tong_hop_trac_nghiem?row=0
+Tin học MCQ trắc nghiệm
+
+QA CS: https://huggingface.co/datasets/beyoru/QA_CS
+Một tập mẫu hỏi đáp về Computer Science
+
 ### Installation
 
 Các cài đặt này có thể thay đổi
@@ -326,7 +334,7 @@ Ta sẽ nhận được kết quả, in ra các cột sau:
  'context']
 ```
 
-### Địng dạng lại dữ liệu
+### Định dạng lại dữ liệu
 
 Ở đây ta sẽ sử dụng template của llama-3.1/3.2 cũng có thể sử dụng được vì 3.2 chỉ là bản copy của llama 3.1
 
