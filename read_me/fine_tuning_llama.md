@@ -1,19 +1,25 @@
 ## Tinh chỉnh mô hình (text compilation)
 
-### Lưu ý thường cập nhật:
+### Cập nhật:
 
 10/10/2024:
 
 - Lưu ý sau khi tinh chỉnh luôn luôn phải lưu lora adapter
 - Nếu tinh chỉnh trên _instruct model_ thì có thể thử merge với _model base_. Đó là lý do có thể chi cần adapter sau khi tinh chỉnh
-- Chưa giải quyết được vấn đề hiệu suất kém khi sử dụng qlora. Giải pháp đề cử có thể do merged mô hình chưa đúng _Unsloth_ có thể đã merge mô hình Quantization với lora thay vì dequantize trở lại float16 rồi mới merge.
+- **Vấn đề**: Chưa giải quyết được vấn đề hiệu suất kém khi sử dụng qlora. Giải pháp đề cử có thể do merged mô hình chưa đúng _Unsloth_ có thể đã merge mô hình Quantization với lora thay vì dequantize trở lại float16/float32 rồi mới merge.
 - Một vài nguồn tin không được chứng thực cho rằng tăng alpha sẽ tăng hiệu suất mô hình =)). Ví dụ nếu rank = 128 thì alpha nên là 128 (lưu ý có sử dụng rslora).
 - Một vài mô hình của unsloth đang rất "?", hãy sử dụng mô hình gốc ví dụ `llama` của `Meta` thay vì của `Unsloth`
+
+11/10/2024:
+
+- 1B model instruct tinh chỉnh adapter + base model = Worst model
 
 ### Tập dữ liệu sử dụng
 
 MCQ tin học: https://huggingface.co/datasets/beyoru/tong_hop_trac_nghiem?row=0
 Tin học MCQ trắc nghiệm
+
+- Contexts: được tạo bằng GPT4o
 
 ### Installation
 
@@ -217,12 +223,46 @@ trainer_stats = trainer.train()
 
 ### Saving_model and push to hf
 
+Unsloth saving
+
 ```
 # examples saving as float16
 model.push_to_hub_merged("tên_repo", tokenizer, save_method = "merged_16bit", token = "key_hf")
 # saving as lora
 model.push_to_hub_merged("tên_repo", tokenizer, save_method = "lora", token = "key_hf")
 # Don't save as 4 bit
+```
+
+Normal saving
+
+```
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B-Instruct", token="")
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B-Instruct", token = '')
+
+
+!pip install -q peft
+
+
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from peft import PeftModel, PeftConfig
+
+adapter_path = ""
+config = PeftConfig.from_pretrained(adapter_path)
+model_adapter = PeftModel.from_pretrained(model, adapter_path)
+
+
+merged_model = model_adapter.merge_and_unload()
+
+
+import gc
+import torch
+del model_adapter  # Delete the model adapter to free up memory
+torch.cuda.empty_cache()  # Clear the CUDA memory cache
+gc.collect()  # Collect garbage to further clean up
+
+merged_model.push_to_hub("repo_name", tokenizer, token = "")
 ```
 
 ### Trường hợp VRAM không đủ:
