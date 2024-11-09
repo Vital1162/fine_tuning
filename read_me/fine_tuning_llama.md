@@ -1,12 +1,19 @@
 ## Tinh chỉnh mô hình (text compilation)
 
+### Lưu ý thường cập nhật:
+
+10/10/2024:
+
+- Lưu ý sau khi tinh chỉnh luôn luôn phải lưu lora adapter
+- Nếu tinh chỉnh trên _instruct model_ thì có thể thử merge với _model base_. Đó là lý do có thể chi cần adapter sau khi tinh chỉnh
+- Chưa giải quyết được vấn đề hiệu suất kém khi sử dụng qlora. Giải pháp đề cử có thể do merged mô hình chưa đúng _Unsloth_ có thể đã merge mô hình Quantization với lora thay vì dequantize trở lại float16 rồi mới merge.
+- Một vài nguồn tin không được chứng thực cho rằng tăng alpha sẽ tăng hiệu suất mô hình =)). Ví dụ nếu rank = 128 thì alpha nên là 128 (lưu ý có sử dụng rslora).
+- Một vài mô hình của unsloth đang rất "?", hãy sử dụng mô hình gốc ví dụ `llama` của `Meta` thay vì của `Unsloth`
+
 ### Tập dữ liệu sử dụng
 
 MCQ tin học: https://huggingface.co/datasets/beyoru/tong_hop_trac_nghiem?row=0
 Tin học MCQ trắc nghiệm
-
-QA CS: https://huggingface.co/datasets/beyoru/QA_CS
-Một tập mẫu hỏi đáp về Computer Science
 
 ### Installation
 

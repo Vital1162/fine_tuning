@@ -2,16 +2,16 @@ zero-md {
     margin: auto;
     display: block;
     width: 90%;
-    max-width: 800px;
+    max-width: 900px;
     margin: 20px auto;
-    background-color: #131313;
+    background-color: #131313 !important;
     border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 10px rgba(189, 130, 130, 0.2);
 }
 
 @media (min-width: 768px) {
     zero-md {
-        width: 75%; 
+        width: 75%;
     }
 }
 
@@ -22,5 +22,5 @@ zero-md {
 }
 
 body{
-    background-color: #131313;
+    background-color: #131313 !important;
 }
