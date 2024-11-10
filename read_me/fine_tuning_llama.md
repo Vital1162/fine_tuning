@@ -278,6 +278,22 @@ gc.collect()  # Collect garbage to further clean up
 merged_model.push_to_hub("repo_name", tokenizer, token = "")
 ```
 
+_Tác động của lượng tử hóa với hiệu suất trong tinh chỉnh qlora_
+
+LoRA trong QLoRA
+Trong QLoRA các tham số của LoRA không được lượng tử trực tiếp. Điều này có nghĩa là, LoRA vẫn luôn giữ độ chính xác `fl16/fb16`. Vì vậy các loss trong quá trình tinh chỉnh dựa trên đọ chính xác 16 bit.
+Mô hình cơ sở sễ được lượng tử hóa (4/8 bit) cụ thể là lưu trữ dưới dạng NF4/NF8. Nhưng khi tính toán chúng được giải lượng tử hóa lên độ chính xác 16 bits để thực hiện tính toán cũng adapter.
+
+Hợp nhất LoRA với mô hình lượng tử hóa
+Sau khi hoàn tất tinh chỉnh và cho tham số của adapter hợp nhất với mô hình cơ sở dạng 4 bits, điều này nghĩa là các tham số của LoRA cũng bị lượng tử hóa, để phù hợp với định dạng ban dữ liệu mô hình cơ sở.
+Cấu trúc mô hình sẽ giống hệt so với mô hình chưa tinh chỉnh. Tuy rằng sẽ có độ chính xác cao hơn, nhưng vẫn làm mất đi một phần thông tin do việc chuyển từ 16 bit sang 4 bit.
+
+Suy giảm hiệu suất khi kết hợp
+Quá trình lượng tử tham số của LoRA có thể gây ra giảm hiệu suất. Mặc dù các tham số của LoRA được tinh chỉnh ở độ chính xác cao hơn, chúng cũng sẽ không nhận biết được lượng tử hóa. Như đã đề cập ở trên, các tham số của LoRA chỉ thấy các tham số mô hình cơ sở ở định dạng 16-bit chứ không phải định dạng 4-bit.
+$W_{LoRA} × W_{base \space 16-bits}$
+Và khi kết hợp lại với dạng 4 bits chúng sẽ kết hợp với các tham số mà chúng chưa từng được tinh chỉnh cho, dẫn đến khả năng suy giảm hiệu suất
+$W_{merged \space 4-bits} = Quantize(W_{LoRA}) + W_{base \space 4-bits}$
+
 ### Trường hợp VRAM không đủ:
 
 - Chọn mô hình khác
