@@ -119,7 +119,7 @@ trainer = UnslothTrainer(
 trainer_stats = trainer.train()
 
 ## Lưu adapter
-model.push_to_hub_merged("tên_adapter", tokenizer, save_method = "lora", token = "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")
+model.push_to_hub_merged("tên_adapter", tokenizer, save_method = "lora", token = "")
 
 ## Merged với model gốc
 
@@ -165,14 +165,12 @@ Tin học MCQ trắc nghiệm
 ### Installation
 
 Các cài đặt này có thể thay đổi
-Update lại installation: https://github.com/unslothai/unsloth/issues/1144
 
 ```
 %%capture
-!pip install unsloth
+!pip install unsloth "xformers==0.0.28.post2"
 # Also get the latest nightly Unsloth!
 !pip uninstall unsloth -y && pip install --upgrade --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
-!pip uninstall transformers -y && pip install --upgrade --no-cache-dir "git+https://github.com/huggingface/transformers.git"
 ```
 
 ### Model
