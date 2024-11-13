@@ -26,6 +26,134 @@ merge >> instruct model
 ```
 
 - **Đề cử**: tăng số lượng tham số cho mô hình dùng mô hình có lượng tham số nhiều hơn giải quyết **content issue**
+  13/11/2024:
+- Vấn đề: Giải quyết vấn đề ngữ nghĩa (1B).
+
+```
+# Tinh chỉnh với trước với bộ https://huggingface.co/datasets/pnpm12/informatic_book:
+
+## Model name ##
+meta-llama/Llama-3.2-1B-Instruct
+
+## peft config ##
+model = FastLanguageModel.get_peft_model(
+    model,
+    r = 256, # 256, 512,... #choose any above 128
+
+    # added lm_head, embed_tokens with rank 256+ ~ full training
+    target_modules = ["q_proj", "k_proj", "v_proj", "o_proj",
+                      "gate_proj", "up_proj", "down_proj",
+                      "emb_tokens", "lm_head",],
+
+    lora_alpha = 32,
+    lora_dropout = 0.0, # Don't add dropout to lora
+    bias = "none",
+    use_gradient_checkpointing = "unsloth",
+    use_rslora = True,
+    loftq_config = None,
+)
+
+!pip install -q datasets
+from datasets import load_dataset
+
+## Dataset ##
+import re
+
+def clean_text(text):
+    cleaned_text = re.sub(r'\n+', '\n', text.strip())
+    return cleaned_text
+
+ds = load_dataset("pnpm12/informatic_book", split='train')
+
+EOS_TOKEN = tokenizer.eos_token
+def formatting_prompts_func(examples):
+    return {
+        "text": [title + '\n' + context + EOS_TOKEN
+                 for title, context in zip(examples['title'], examples['context'])]
+    }
+
+dataset = ds.map(formatting_prompts_func, batched=True)
+
+
+dataset = ds.map(formatting_prompts_func, batched = True,)
+
+
+## Finetuing ##
+"""
+Có thể điều chỉnh epochs nếu như loss vẫn quá cao >=0.9
+"""
+from trl import SFTTrainer
+from transformers import TrainingArguments
+from unsloth import is_bfloat16_supported
+from unsloth import UnslothTrainer, UnslothTrainingArguments
+
+trainer = UnslothTrainer(
+    model = model,
+    tokenizer = tokenizer,
+    train_dataset = dataset,
+    dataset_text_field = "text",
+    max_seq_length = max_seq_length,
+    dataset_num_proc = 8,
+
+    args = UnslothTrainingArguments(
+        per_device_train_batch_size = 4,
+        gradient_accumulation_steps = 8,
+
+        warmup_ratio = 0.1,
+        num_train_epochs = 3,
+
+        learning_rate = 2e-4,
+        embedding_learning_rate = 1e-4,
+
+        fp16 = not is_bfloat16_supported(),
+        bf16 = is_bfloat16_supported(),
+        logging_steps = 1,
+        optim = "adamw_8bit",
+        weight_decay = 0.00,
+        lr_scheduler_type = "cosine", #change to cosine
+        seed = 3407,
+        output_dir = "outputs",
+        report_to = "none",
+)
+
+trainer_stats = trainer.train()
+
+## Lưu adapter
+model.push_to_hub_merged("tên_adapter", tokenizer, save_method = "lora", token = "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")
+
+## Merged với model gốc
+
+"""
+Lưu ý khi push nó sẽ chỉ push model thôi nên là cố gắng lấy cái tokenizer, tokenizer_config ở bên adapter chuyển sang
+"""
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+from peft import PeftModel, PeftConfig
+import gc
+
+tokenizer = AutoTokenizer.from_pretrained("tên_adapter")
+model = AutoModelForCausalLM.from_pretrained("tên_adapter", torch_dtype=torch.float16, token="")
+
+adapter_path = "beyoru/llama3.1_instruct_1B_cau_hoi_th"
+config = PeftConfig.from_pretrained(adapter_path, torch_dtype=torch.float16)
+model_adapter = PeftModel.from_pretrained(model, adapter_path)
+
+merged_model = model_adapter.merge_and_unload()
+
+del model_adapter
+torch.cuda.empty_cache()
+gc.collect()
+
+merged_model.push_to_hub("tên_mô_hình", token="")
+```
+
+Sau khi có mô hình merge ở trên kia thì tiếp tục tinh chỉnh với bộ dữ liệu
+https://huggingface.co/datasets/beyoru/tong_hop_trac_nghiem?row=0
+
+```
+## Updating later
+
+```
 
 ### Tập dữ liệu sử dụng
 
@@ -250,32 +378,24 @@ Normal saving
 
 ```
 from transformers import AutoTokenizer, AutoModelForCausalLM
-
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B-Instruct", token="")
-model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B-Instruct", token = '')
-
-
-!pip install -q peft
-
-
-from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 from peft import PeftModel, PeftConfig
+import gc
 
-adapter_path = ""
-config = PeftConfig.from_pretrained(adapter_path)
+tokenizer = AutoTokenizer.from_pretrained("tên_adapter")
+model = AutoModelForCausalLM.from_pretrained("tên_adapter", torch_dtype=torch.float16, token="")
+
+adapter_path = "beyoru/llama3.1_instruct_1B_cau_hoi_th"
+config = PeftConfig.from_pretrained(adapter_path, torch_dtype=torch.float16)
 model_adapter = PeftModel.from_pretrained(model, adapter_path)
-
 
 merged_model = model_adapter.merge_and_unload()
 
+del model_adapter
+torch.cuda.empty_cache()
+gc.collect()
 
-import gc
-import torch
-del model_adapter  # Delete the model adapter to free up memory
-torch.cuda.empty_cache()  # Clear the CUDA memory cache
-gc.collect()  # Collect garbage to further clean up
-
-merged_model.push_to_hub("repo_name", tokenizer, token = "")
+merged_model.push_to_hub("tên_mô_hình", token="")
 ```
 
 _Tác động của lượng tử hóa với hiệu suất trong tinh chỉnh qlora_
