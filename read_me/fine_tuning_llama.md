@@ -34,6 +34,7 @@ merge >> instruct model
 
 ## Model name ##
 meta-llama/Llama-3.2-1B-Instruct
+hoặc qwen2.5-0.5B instruct (Nếu như muốn nhanh mà không cần load_in_4bit)
 
 ## peft config ##
 model = FastLanguageModel.get_peft_model(
