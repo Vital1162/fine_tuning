@@ -129,8 +129,8 @@ import torch
 from peft import PeftModel, PeftConfig
 import gc
 
-tokenizer = AutoTokenizer.from_pretrained("tên_adapter")
-model = AutoModelForCausalLM.from_pretrained("tên_adapter", torch_dtype=torch.float16, token="")
+tokenizer = AutoTokenizer.from_pretrained("tên_mô_hình_finetuning")
+model = AutoModelForCausalLM.from_pretrained("tên_mô_hình_finetuning", torch_dtype=torch.float16, token="")
 
 adapter_path = "beyoru/llama3.1_instruct_1B_cau_hoi_th"
 config = PeftConfig.from_pretrained(adapter_path, torch_dtype=torch.float16)
@@ -155,13 +155,13 @@ Model lúc này train
 ## peft config ##
 model = FastLanguageModel.get_peft_model(
     model,
-    r = 16,
+    r = 64,
 
     # added lm_head, embed_tokens with rank 256+ ~ full training
     target_modules = ["q_proj", "k_proj", "v_proj", "o_proj",
                       "gate_proj", "up_proj", "down_proj",],
 
-    lora_alpha = 16,
+    lora_alpha = 64,
     lora_dropout = 0.0,
     bias = "none",
     use_gradient_checkpointing = "unsloth",
@@ -640,7 +640,7 @@ Các bước Installtion, load model, ... tương tự như trên.
 
 Đối với load dữ liệu thì ta sẽ làm như sau:
 
-```
+```python
 ## tải dữ liệu tong_hop_trac_nghiem
 !pip install -q datasets
 from datasets import load_dataset
@@ -705,7 +705,7 @@ dataset = dataset.map(formatting_prompts_func, batched = True,)
 
 ### Training
 
-```
+```python
 from trl import SFTTrainer
 from transformers import TrainingArguments, DataCollatorForSeq2Seq
 from unsloth import is_bfloat16_supported
@@ -748,7 +748,7 @@ trainer = train_on_responses_only(
 
 Cuối cùng là train
 
-```
+```python
 trainer_stats = trainer.train()
 ```
 
