@@ -39,18 +39,18 @@ hoặc qwen2.5-0.5B instruct (Nếu như muốn nhanh mà không cần load_in_4
 ## peft config ##
 model = FastLanguageModel.get_peft_model(
     model,
-    r = 256, # 256, 512,... #choose any above 128
+    r = 16, # 256, 512,... #choose any above 128
 
     # added lm_head, embed_tokens with rank 256+ ~ full training
     target_modules = ["q_proj", "k_proj", "v_proj", "o_proj",
                       "gate_proj", "up_proj", "down_proj",
                       "emb_tokens", "lm_head",],
 
-    lora_alpha = 32,
+    lora_alpha = 16,
     lora_dropout = 0.0, # Don't add dropout to lora
     bias = "none",
     use_gradient_checkpointing = "unsloth",
-    use_rslora = True,
+    use_rslora = False,
     loftq_config = None,
 )
 
@@ -80,9 +80,6 @@ dataset = ds.map(formatting_prompts_func, batched = True,)
 
 
 ## Finetuing ##
-"""
-Có thể điều chỉnh epochs nếu như loss vẫn quá cao >=0.9
-"""
 from trl import SFTTrainer
 from transformers import TrainingArguments
 from unsloth import is_bfloat16_supported
@@ -152,7 +149,140 @@ Sau khi có mô hình merge ở trên kia thì tiếp tục tinh chỉnh với b
 https://huggingface.co/datasets/beyoru/tong_hop_trac_nghiem?row=0
 
 ```
-## Updating later
+## Model name ##
+Model lúc này train
+
+## peft config ##
+model = FastLanguageModel.get_peft_model(
+    model,
+    r = 16,
+
+    # added lm_head, embed_tokens with rank 256+ ~ full training
+    target_modules = ["q_proj", "k_proj", "v_proj", "o_proj",
+                      "gate_proj", "up_proj", "down_proj",],
+
+    lora_alpha = 16,
+    lora_dropout = 0.0,
+    bias = "none",
+    use_gradient_checkpointing = "unsloth",
+    use_rslora = True, #enable this
+    loftq_config = None,
+)
+
+!pip install -q datasets
+from datasets import load_dataset
+
+## Dataset ##
+!pip install -q datasets
+from unsloth.chat_templates import get_chat_template
+
+"""#Nếu dùng llama"""
+tokenizer = get_chat_template(
+    tokenizer,
+    chat_template = "llama-3.1",
+)
+
+"""# Nếu dùng qwen"""
+tokenizer = get_chat_template(
+    tokenizer,
+    chat_template = "qwen-2.5",
+)
+
+from datasets import load_dataset
+
+ds = load_dataset("beyoru/tong_hop_trac_nghiem", split='train')
+
+def format_entry(entry):
+    user_content = {'content': entry['new_contexts'], 'role': 'user'}
+
+    assistant_content = {
+        'content': (
+            f"Câu hỏi: {entry['question']}\n"
+            f"A. {entry['answer_a']}\n"
+            f"B. {entry['answer_b']}\n"
+            f"C. {entry['answer_c']}\n"
+            f"D. {entry['answer_d']}\n"
+            f"Đáp án: {entry['answer_key']}."
+        ),
+        'role': 'assistant'
+    }
+
+    return {"conversations": [user_content, assistant_content]}
+
+def formatting_prompts_func(examples):
+    convos = examples["conversations"]
+    texts = [tokenizer.apply_chat_template(convo, tokenize = False, add_generation_prompt = False) for convo in convos]
+    return { "text" : texts, }
+pass
+
+formatted_ds = ds.map(format_entry)
+
+from unsloth.chat_templates import standardize_sharegpt
+dataset = standardize_sharegpt(formatted_ds)
+dataset = dataset.map(formatting_prompts_func, batched = True,)
+
+## Finetuing ##
+from trl import SFTTrainer
+from transformers import TrainingArguments, DataCollatorForSeq2Seq
+from unsloth import is_bfloat16_supported
+
+trainer = SFTTrainer(
+    model = model,
+    tokenizer = tokenizer,
+    train_dataset = dataset,
+    dataset_text_field = "text",
+    max_seq_length = max_seq_length,
+    data_collator = DataCollatorForSeq2Seq(tokenizer = tokenizer),
+    dataset_num_proc = 2,
+    packing = False, # Can make training 5x faster for short sequences.
+    args = TrainingArguments(
+        per_device_train_batch_size = 2,
+        gradient_accumulation_steps = 4,
+        warmup_steps = 5,
+        # num_train_epochs = 1, # Set this for 1 full training run.
+        max_steps = 60,
+        learning_rate = 2e-4,
+        fp16 = not is_bfloat16_supported(),
+        bf16 = is_bfloat16_supported(),
+        logging_steps = 1,
+        optim = "adamw_8bit",
+        weight_decay = 0.01,
+        lr_scheduler_type = "linear",
+        seed = 3407,
+        output_dir = "outputs",
+        report_to = "none", # Use this for WandB etc
+    ),
+)
+
+trainer_stats = trainer.train()
+
+## Lưu adapter
+model.push_to_hub_merged("tên_adapter", tokenizer, save_method = "lora", token = "")
+
+## Merged với model gốc
+
+"""
+Lưu ý khi push nó sẽ chỉ push model thôi nên là cố gắng lấy cái tokenizer, tokenizer_config ở bên adapter chuyển sang
+"""
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+from peft import PeftModel, PeftConfig
+import gc
+
+tokenizer = AutoTokenizer.from_pretrained("tên_adapter")
+model = AutoModelForCausalLM.from_pretrained("tên_adapter", torch_dtype=torch.float16, token="")
+
+adapter_path = "beyoru/llama3.1_instruct_1B_cau_hoi_th"
+config = PeftConfig.from_pretrained(adapter_path, torch_dtype=torch.float16)
+model_adapter = PeftModel.from_pretrained(model, adapter_path)
+
+merged_model = model_adapter.merge_and_unload()
+
+del model_adapter
+torch.cuda.empty_cache()
+gc.collect()
+
+merged_model.push_to_hub("tên_mô_hình", token="")
 
 ```
 
@@ -196,6 +326,8 @@ model, tokenizer = FastLanguageModel.from_pretrained(
     load_in_4bit = load_in_4bit,
 )
 ```
+
+- Cập nhật: Tại sao lại quên? (Ở dưới)
 
 ### PEFT
 
@@ -619,3 +751,11 @@ Cuối cùng là train
 ```
 trainer_stats = trainer.train()
 ```
+
+### Why forget
+
+LoRA quên ít hơn so với IFT. Vấn đề quên có thể tệ hơn nếu như ta đặt quá nhiều `epochs` trong huấn luyện. Vậy có thể kiểm soát chúng ? Có, bằng cách điều chỉnh rank khi tinh chỉnh.
+Sự đánh đổi của việc học là quên: Model sẽ học được điều gì mới chủ yếu ở trong khoảng epoch từ [1,8] và dần dần kém đi (LoRA Learns Less and Forgets Less). Nhớ rằng tất cả những gì ta làm là cố gắng thay đổi tham số của mô hình $W_{finetuning} = W_{PT} + \Delta$ sao cho mô hình sẽ đạt được đầu ra mong muốn
+![alt text](image.png)
+Như đã đề cập mô hình sẽ học được điều gì đó mới trong khoảng nafod đó, khi đó nó sẽ quên đi các kiến thức ban đầu vốn trong PT, điều này có 2 mặt khi có thể giảm hoặc cũng có thể tăng hiệu suất mô hình.
+Nếu muốn mô hình học nhiều hơn thì hãy sử dụng rank cao hơn, nhưng đồng nghĩa với việc sẽ đánh đổi việc quên đi nhiều hơn. Đối với các task đơn giản không đưa ra rank quá cao (chọn 8, 16). Hiệu suất của LoRA sẽ tương đồng với IFT nếu như ta đặt rank >= 256 apply với các lớp emb_tokens và lm_head, attention và mlp (Linear layer)
