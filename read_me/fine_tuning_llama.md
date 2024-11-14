@@ -756,6 +756,10 @@ trainer_stats = trainer.train()
 
 LoRA quên ít hơn so với IFT. Vấn đề quên có thể tệ hơn nếu như ta đặt quá nhiều `epochs` trong huấn luyện. Vậy có thể kiểm soát chúng ? Có, bằng cách điều chỉnh rank khi tinh chỉnh.
 Sự đánh đổi của việc học là quên: Model sẽ học được điều gì mới chủ yếu ở trong khoảng epoch từ [1,8] và dần dần kém đi (LoRA Learns Less and Forgets Less). Nhớ rằng tất cả những gì ta làm là cố gắng thay đổi tham số của mô hình $W_{finetuning} = W_{PT} + \Delta$ sao cho mô hình sẽ đạt được đầu ra mong muốn
+
 ![alt text](image.png)
+
 Như đã đề cập mô hình sẽ học được điều gì đó mới trong khoảng nafod đó, khi đó nó sẽ quên đi các kiến thức ban đầu vốn trong PT, điều này có 2 mặt khi có thể giảm hoặc cũng có thể tăng hiệu suất mô hình.
-Nếu muốn mô hình học nhiều hơn thì hãy sử dụng rank cao hơn, nhưng đồng nghĩa với việc sẽ đánh đổi việc quên đi nhiều hơn. Đối với các task đơn giản không đưa ra rank quá cao (chọn 8, 16). Hiệu suất của LoRA sẽ tương đồng với IFT nếu như ta đặt rank >= 256 apply với các lớp emb_tokens và lm_head, attention và mlp (Linear layer)
+Nếu muốn mô hình học nhiều hơn thì hãy sử dụng rank cao hơn, nhưng đồng nghĩa với việc sẽ đánh đổi việc quên đi nhiều hơn. Đối với các task đơn giản không đưa ra rank quá cao (chọn 8, 16). Hiệu suất của LoRA sẽ tương đồng với IFT nếu như ta đặt rank >= 256 apply với các lớp emb_tokens và lm_head, attention và mlp (Linear layer). Về alpha sau khi đã tính toán rất nhiều với alpha lớn, thì alpha lớn sẽ phù hợp với task khi bạn mong muốn độ ảnh hưởng của các ma trận nhỏ này phải lớn
+
+**Tóm lại nếu như dữ liệu không cung cấp một cái gì mới mẻ cho mô hình thì giảm rank xuống**
