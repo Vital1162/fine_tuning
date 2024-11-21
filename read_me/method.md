@@ -4,8 +4,8 @@
 
 - Yêu cầu câu hỏi trắc nghiệm chất lượng cao.
 - Yêu cầu phần cứng lớn (rất hạn hẹp chủ yếu là tinh chỉnh trên T4) khi tinh chỉnh (FFT).
-- Dữ liệu ít và mới là một vấn đề.
-- Chất lượng dữ liệu cũng có thể là một vấn đề gặp phải khi tinh chỉnh đặc biệt là khi lượng mẫu ít thì chất lượng là điều vô cùng quan trọng.
+- **Dữ liệu ít và mới là một vấn đề**.
+- **Chất lượng dữ liệu cũng có thể là một vấn đề gặp phải khi tinh chỉnh đặc biệt là khi lượng mẫu ít thì chất lượng là điều vô cùng quan trọng.**
 
 #### Sơ bộ
 
@@ -29,10 +29,16 @@ Tinh chỉnh cũng sẽ vô cũng tốn kém khi số lượng tham số của c
 LoRA được cho là một giải pháp thay thế tốt cho FFT, khi thay vì tinh chỉnh toàn bộ tham số thì ta sẽ chỉ tinh chỉnh một phần nhỏ tham số của mô hình.
 **<p style="text-align:center;">$W_{lora} = W*{pretrained} + \Delta W (AB, A \in R^{m \times r}, B \in R^{r \times n} )$</p>**
 
-<update...>
-/QLoRA
+QLoRA (Quantization-aware Low-Rank Adaptation) được cho là cải tiến được thiết kế để giảm việc sử dụng bộ nhớ mà không làm giảm hiệu suất. Bao gồm các điều kiện
+
+- Kiểu dữ liệu lưu trữ: NormalFloat 4-bit, giúp giảm kích thước lưu trữ của trọng số (weights) mà vẫn giữ được độ chính xác cần thiết.
+- Double Quantization: Áp dụng phương pháp lượng tử hóa hai lần đối với các hằng số lượng tử hóa, giúp tối ưu hóa việc sử dụng bộ nhớ.
+- Kiểu dữ liệu tính toán: float16 hoặc bfloat16, đảm bảo hiệu suất tính toán nhanh hơn so với float32 nhưng không làm mất đi độ chính xác đáng kể.
+
+Nhờ các cải tiến này, QLoRA giúp tăng tốc tính toán ma trận và giảm dung lượng lưu trữ cần thiết, đặc biệt trong quá trình lưu trữ gradient và huấn luyện các mô hình lớn. (QLoRA paper)
 
 /DoRA
+<update...>
 
 ### Lựa chọn tham số r và $\alpha$
 
@@ -58,15 +64,14 @@ _LoRA learn less forgets less_ (3)
 - Cẩn thận khi lựa chọn rank ảnh hưởng tới hiệu suất mô hình (2)
 
 Nhận xét: **_Tinh chỉnh thì nên đọc_**
-Thực sự không có nguyên tắc nào kể cả khi họ chỉ chứng minh điều đó trên các tập dữ liệu. Khi đặt $\alpha = 2$ tức là họ đang tăng tốc độ học cơ bản lên 2 lần và thực sự thiếu căn cứ và không phù hợp với mô hình có kích thước khác nhau. Đề xuất ở đây đó chính là cho $\alpha$ là một hằng số có thể bằng $\sqrt{dim_{hidden \space layer}}$. Vì khi rank tiệm cận với số chiều của mô hình (với 8B là 4096)
+Thực sự không có nguyên tắc nào kể cả khi họ chỉ chứng minh điều đó trên các tập dữ liệu. Khi đặt $\alpha = 2$ tức là họ đang tăng tốc độ học cơ bản lên 2 lần và thực sự thiếu căn cứ và không phù hợp với mô hình có kích thước khác nhau. Đề xuất ở đây đó chính là cho $\alpha$ là một hằng số có thể bằng $\sqrt{dim_{hidden \space layer}}$. Vì khi rank tiệm cận với số chiều của mô hình (với 7B/8B thường là 4096, hãy kiểm tra kiến trúc)
 
 Chứng minh:
-$\alpha = \sqrt{dim}$
+Với $\alpha = \sqrt{dim}$
 
-rsLoRA => lr_lora = $\frac{\sqrt{dim}}{\sqrt{r}} \times lr$
+Áp dụng rsLoRA thì ta có:
+lr_lora = $\frac{\sqrt{dim}}{\sqrt{r}} \times lr$ ($dim >> r$)
 
-Notes:
-$dim >> r$
 Điều này giữ tốc độ học đủ lớn, phù hợp với các không gian thấp rank vốn ít thông tin.
 
 rank tiến về dim thì hệ số trên sẽ tiến về 1 => làm tốc độ học đồng bộ với tốc độ học ban đầu của lr
