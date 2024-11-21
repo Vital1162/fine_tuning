@@ -4,7 +4,7 @@ zero-md {
 
     margin: auto;
     display: block;
-    width: 90%;
+    width: 70%;
     max-width: 900px;
     margin: 20px auto;
     border-radius: 10px;
@@ -24,13 +24,13 @@ zero-md::part(content) {
 
 @media (min-width: 768px) {
     zero-md {
-        width: 75%;
+        width: 60%;
     }
 }
 
 @media (min-width: 1024px) {
     zero-md {
-        width: 60%;
+        width: 55%;
     }
 }
 
